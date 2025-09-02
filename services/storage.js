@@ -51,11 +51,11 @@ async function read(name) {
             return dbData[name];
         } else {
             log('warn', {message: `Nenhum dado encontrado para "${name}".`});
-            return null;
+            return undefined;
         }
     } catch (error) {
         log('error', {message: 'Erro ao ler do arquivo database.json:', error});
-        return null;
+        return undefined;
     }
 }
 
