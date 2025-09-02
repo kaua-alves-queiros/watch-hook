@@ -62,4 +62,6 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/watch-hook:${{ github.ref_name }}
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/watch-hook:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/watch-hook:latest
