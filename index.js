@@ -2,45 +2,64 @@ const statusPageService = require('./services/status-page');
 const storageServcie = require('./services/storage');
 const modulesLoader = require('./services/module');
 const { log } = require('./services/configuration');
+const fs = require('fs/promises');
+
 /**
- * Função principal que executa o loop de verificação de incidentes.
+ * @typedef {Object} Incident
+ * @property {string} id - O ID único do incidente.
+ * @property {string} name - O nome do incidente.
+ * @property {string} status - O status atual do incidente (ex: "investigating", "resolved").
+ * @property {string} impact - O nível de impacto do incidente.
+ */
+
+/**
+ * Executa o loop principal de verificação de incidentes.
  *
- * Esta função opera em um loop infinito (`while (true)`) para monitorar
- * continuamente a página de status. Ela implementa uma estratégia de
- * backoff exponencial em caso de falhas consecutivas, garantindo que
- * o sistema não sobrecarregue a API externa.
+ * A função opera em um loop infinito, monitorando continuamente a página de status.
+ * Em caso de falha na requisição, ela usa uma estratégia de backoff exponencial
+ * para evitar sobrecarregar a API externa.
  *
- * O sistema espera 1 segundo entre as execuções bem-sucedidas.
- * Em caso de erro, o tempo de espera aumenta exponencialmente
- * (2, 4, 8, 16 segundos, etc.) para dar tempo aos serviços se recuperarem.
+ * Na primeira execução, o sistema apenas salva o estado atual dos incidentes
+ * sem enviar notificações. Isso evita alertas indesejados ao iniciar.
  */
 async function main() {
     let attempts = 0;
     const modules = modulesLoader.loadModules();
     
+    let isFirstRun = false;
+    try {
+        await fs.access('./database/database.json');
+    } catch (error) {
+        log('info', 'Database file not found. This is the first run, skipping notifications.');
+        isFirstRun = true;
+    }
+
     while (true) {
         try {
             const incidents = await statusPageService.getIncidents();
-
             const changeds = await statusPageService.detectChanges(incidents);
 
             const updates = {};
             
             changeds.forEach(changed => {
-                const incident = incidents.filter(i => i.id == changed)[0]
+                const incident = incidents.filter(i => i.id == changed)[0];
                 updates[changed] = incident;
-            })
+            });
 
             if (Object.keys(updates).length > 0) {
                 for (const [key, value] of Object.entries(updates)) {
                     await storageServcie.write(key, value);
-
-                    // O loop for...of garante que a notificação de cada módulo seja aguardada
-                    for (const module of modules) {
-                        await module.notifyUpdate(value);
+                    if (!isFirstRun) {
+                        for (const module of modules) {
+                            await module.notifyUpdate(value);
+                        }
+                    } else {
+                        log('info', `Incident ID ${key} stored, notifications skipped.`);
                     }
                 }
             }
+            
+            isFirstRun = false;
             
             attempts = 0;
             await new Promise(resolve => setTimeout(resolve, 30000));
