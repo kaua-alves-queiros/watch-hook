@@ -1,4 +1,4 @@
-git tag v0.0.9 -m "
+git tag vx.x.x -m "
 # vx.x.x - Lançamento
 
 🎉 **Nova Versão Lançada!** 🎉
