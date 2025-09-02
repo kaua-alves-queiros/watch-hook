@@ -1,6 +1,6 @@
 const statusPageService = require('./services/status-page');
 const storageServcie = require('./services/storage');
-const modulesService = require('./modules/module');
+const modulesLoader = require('./services/module');
 const { log } = require('./services/configuration');
 /**
  * Função principal que executa o loop de verificação de incidentes.
@@ -16,7 +16,7 @@ const { log } = require('./services/configuration');
  */
 async function main() {
     let attempts = 0;
-    const modules = modulesService.loadModules();
+    const modules = modulesLoader.loadModules();
     
     while (true) {
         try {
