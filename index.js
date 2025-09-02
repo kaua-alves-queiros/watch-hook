@@ -35,9 +35,10 @@ async function main() {
                 for (const [key, value] of Object.entries(updates)) {
                     await storageServcie.write(key, value);
 
-                    modules.forEach(async module => {
-                        await module.notifyUpdate(key, value);
-                    });
+                    // O loop for...of garante que a notificação de cada módulo seja aguardada
+                    for (const module of modules) {
+                        await module.notifyUpdate(value);
+                    }
                 }
             }
             
