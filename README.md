@@ -1,137 +1,141 @@
 # Watch Hook
 
-**Watch Hook** is a free, open-source, and extensible webhook solution for StatusPage.  
-It allows you to monitor incidents and automate notifications or integrations with your own modules, without any cost or vendor lock-in.
+**Watch Hook** is a free, open-source, and extensible solution to monitor StatusPage incidents and automate notifications or integrations with your own modules.
 
-**Repository:** [https://github.com/kaua-alves-queiros/watch-hook.git](https://github.com/kaua-alves-queiros/watch-hook.git)
+## Main Advantages
 
-## Highlights
+- **Free & MIT Licensed:** No usage or distribution restrictions.
+- **Webhook for StatusPage:** Receives and processes incident updates.
+- **Extensible:** Easily add your own modules to handle incidents.
+- **Configurable Logging:** Control log level via `.env`.
+- **Docker Ready:** Image ready for use and customization.
+- **Automated release and Docker Hub publishing.**
 
-- **Free & MIT Licensed:** Use, modify, and distribute with no restrictions.
-- **Webhook for StatusPage:** Acts as a webhook to receive and process incident updates from StatusPage.
-- **Highly Extensible:** Easily add your own modules to handle incident updates (e.g., send alerts, trigger scripts, integrate with other systems).
-- **Configurable Logging:** Control verbosity with multiple log levels (`error`, `warn`, `info`, `verbose`, `debug`, `silly`).
-- **No Affiliation:** Not affiliated with StatusPage or Atlassian.
+## How to Use
 
-## Features
+### 1. Docker Installation
 
-- Periodically checks incidents from a StatusPage API.
-- Detects changes and new incidents.
-- Notifies custom modules about updates.
-- Configurable logging levels via `.env`.
-- Exponential backoff on errors for robust operation.
-- Simple database storage for incident state.
+The easiest way to use Watch Hook is via Docker.  
+You can use the official image or build your own.
 
-## Usage
-
-1. **Clone this repository:**
-   ```bash
-   git clone https://github.com/kaua-alves-queiros/watch-hook.git
-   cd watch-hook
-   ```
-2. **Install dependencies:**  
-   ```bash
-   npm install
-   ```
-3. **Configure your `.env` file:**  
-   Add your StatusPage credentials and desired log level.
-   ```
-   STATUS_PAGE_BASE_URL=https://api.statuspage.io/v1/pages/
-   STATUS_PAGE_PAGE_ID=your_page_id
-   STATUS_PAGE_API_KEY=your_api_key
-   LOG_LEVEL=info
-   ```
-4. **Run the service:**  
-   ```bash
-   node index.js
-   ```
-
-## Docker
-
-You can run Watch Hook as a Docker container and easily provide your own modules.
-
-### Build the image
+#### Using the official image
 
 ```bash
+docker pull kauaalvesqueiros/watch-hook:latest
+docker run -v /path/to/your/modules:/app/modules -v /path/to/your/.env:/app/.env kauaalvesqueiros/watch-hook:latest
+```
+
+#### Building your own image
+
+Clone the repository and build the image:
+
+```bash
+git clone https://github.com/kaua-alves-queiros/watch-hook.git
+cd watch-hook
 docker build -t watch-hook .
 ```
 
-### Run with your own modules
-
-Mount your custom modules directory to `/app/modules`:
-
-```bash
-docker run -v /path/to/your/modules:/app/modules -v /path/to/your/.env:/app/.env watch-hook
-```
-
-Or use `COPY` in your own Dockerfile:
+By default, the Dockerfile copies the modules and `.env` into the image:
 
 ```dockerfile
-FROM watch-hook
+FROM node:20
+WORKDIR /app
+COPY . .
 COPY ./modules /app/modules
 COPY .env /app/.env
+RUN npm install
+CMD ["node", "index.js"]
 ```
 
-### Example docker-compose.yml
+### 2. Configuration
 
-```yaml
-version: '3'
-services:
-  watch-hook:
-    image: watch-hook
-    build: .
-    volumes:
-      - ./modules:/app/modules
-      - ./your.env:/app/.env
+Use the `.env.example` file as a template:
+
+```bash
+cp .env.example .env
 ```
 
-## How It Works
+Fill in your StatusPage credentials and choose the log level:
 
-- The service fetches incidents from your StatusPage at regular intervals.
-- It compares the latest incidents with previously stored data.
-- If a new incident or a change is detected, it triggers all loaded modules via their `notifyUpdate` method.
-- You can create your own modules to handle updates in any way you want.
+```
+STATUS_PAGE_BASE_URL=https://api.statuspage.io/v1/pages/
+STATUS_PAGE_PAGE_ID=your_page_id
+STATUS_PAGE_API_KEY=your_api_key
+LOG_LEVEL=info
+```
 
-## Extending with Modules
+**Available log levels:**  
+`error` `warn` `info` `verbose` `debug` `silly`
 
-To add custom behavior, create a module in the `modules` directory.  
-Each module must export a `notifyUpdate(incident)` function, where `incident` is the complete incident object (no key, just the object).
+### 3. Extending with Modules
 
-Example module (`modules/yourmodule.js`):
+Create your own modules in the `modules/` directory.  
+Each module must export a `notifyUpdate(incident)` function.
+
+Example (`modules/mymodule.js`):
 
 ```js
 async function notifyUpdate(incident) {
-  // Your custom logic here
-  console.log(incident);
+  // Your custom logic
+  console.log('New incident:', incident);
 }
 
 module.exports = {
-  name: 'your module',
+  name: 'My module',
   notifyUpdate,
 };
 ```
 
-## Configuration
+### 4. Running without Docker (optional)
 
-Set the following variables in your `.env` file:
+If you prefer to run locally:
 
+```bash
+npm install
+node index.js
 ```
-STATUS_PAGE_BASE_URL=
-STATUS_PAGE_PAGE_ID=
-STATUS_PAGE_API_KEY=
-LOG_LEVEL=info
+
+## Automated Tests
+
+Run all tests with:
+
+```bash
+npm test
+```
+
+## Release & Docker Workflow
+
+When you create a new tag and push it to GitHub, the system will:
+
+- Run all tests.
+- Create an automatic release.
+- Publish the image to Docker Hub.
+
+Example:
+
+```bash
+git tag v1.0.0 -m "Stable release"
+git push origin v1.0.0
 ```
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+MIT. See [LICENSE](LICENSE).
 
-## Disclaimer
+## FAQ
 
-This software is not affiliated with, endorsed by, or connected to StatusPage or its parent company.  
-All trademarks and copyrights belong to their respective owners.
+- **How do I add my modules?**  
+  Just create `.js` files in `modules/` and make sure they export `notifyUpdate`.
+
+- **How do I configure logging?**  
+  Set `LOG_LEVEL` in `.env` to your preferred level.
+
+- **Can I use it without Docker?**  
+  Yes, just install dependencies and run `node index.js`.
 
 ---
 
-> **Watch Hook** is the world's best free webhook for StatusPage.  
-> Fast, flexible, and open for your integrations.
+> **Notice:** This project has no relation, partnership, endorsement, or connection with StatusPage or its owners (including Atlassian).  
+> It is an independent tool developed by the community.
+
+> **Watch Hook**: fast, flexible, and open for your integrations!
