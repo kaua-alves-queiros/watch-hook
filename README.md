@@ -58,7 +58,7 @@ It allows you to monitor incidents and automate notifications or integrations wi
 To add custom behavior, create a module in the `modules` directory.  
 Each module must export a `notifyUpdate(incident)` function, where `incident` is the complete incident object (no key, just the object).
 
-Example module (`modules/zapbridge.js`):
+Example module (`modules/yourmodule.js`):
 
 ```js
 async function notifyUpdate(incident) {
