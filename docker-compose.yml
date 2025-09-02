@@ -1,0 +1,11 @@
+services:
+  watch-hook:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - modules:/app/modules
+      - database:/app/database
+volumes:
+  modules:
+  database:

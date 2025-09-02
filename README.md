@@ -46,6 +46,45 @@ It allows you to monitor incidents and automate notifications or integrations wi
    node index.js
    ```
 
+## Docker
+
+You can run Watch Hook as a Docker container and easily provide your own modules.
+
+### Build the image
+
+```bash
+docker build -t watch-hook .
+```
+
+### Run with your own modules
+
+Mount your custom modules directory to `/app/modules`:
+
+```bash
+docker run -v /path/to/your/modules:/app/modules -v /path/to/your/.env:/app/.env watch-hook
+```
+
+Or use `COPY` in your own Dockerfile:
+
+```dockerfile
+FROM watch-hook
+COPY ./modules /app/modules
+COPY .env /app/.env
+```
+
+### Example docker-compose.yml
+
+```yaml
+version: '3'
+services:
+  watch-hook:
+    image: watch-hook
+    build: .
+    volumes:
+      - ./modules:/app/modules
+      - ./your.env:/app/.env
+```
+
 ## How It Works
 
 - The service fetches incidents from your StatusPage at regular intervals.
