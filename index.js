@@ -1,8 +1,7 @@
-// Importa o serviço para buscar incidentes na página de status.
 const statusPageService = require('./services/status-page');
-// Importa o serviço para disparar hooks e notificar incidentes.
-const externalService = require('./services/external');
-
+const storageServcie = require('./services/storage');
+const modulesService = require('./modules/module');
+const { log } = require('./services/configuration');
 /**
  * Função principal que executa o loop de verificação de incidentes.
  *
@@ -17,26 +16,40 @@ const externalService = require('./services/external');
  */
 async function main() {
     let attempts = 0;
+    const modules = modulesService.loadModules();
+    
     while (true) {
         try {
-            // Busca a lista de incidentes da página de status.
             const incidents = await statusPageService.getIncidents();
-            // Dispara os hooks para notificar os incidentes encontrados.
-            await externalService.hookIncidents(incidents);
+
+            const changeds = await statusPageService.detectChanges(incidents);
+
+            const updates = {};
             
-            // Se a operação for bem-sucedida, reinicia a contagem de tentativas.
+            changeds.forEach(changed => {
+                const incident = incidents.filter(i => i.id == changed)[0]
+                updates[changed] = incident;
+            })
+
+            if (Object.keys(updates).length > 0) {
+                for (const [key, value] of Object.entries(updates)) {
+                    await storageServcie.write(key, value);
+
+                    modules.forEach(async module => {
+                        await module.notifyUpdate(key, value);
+                    });
+                }
+            }
+            
             attempts = 0;
-            // Espera 1 segundo antes da próxima execução.
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 30000));
         } catch (exception) {
-            // Em caso de erro, registra a exceção para depuração.
-            console.error({ exception });
+            log('error', { exception });
             
-            // Incrementa o contador de tentativas e calcula o tempo de espera.
             attempts++;
             const delay = Math.pow(2, attempts) * 1000;
-            console.log(`Tentando novamente em ${delay / 1000} segundos...`);
-            
+            log('warn', { message: `Tentando novamente em ${delay / 1000} segundos...` });
+
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
