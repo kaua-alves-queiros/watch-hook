@@ -24,6 +24,7 @@ function loadConfiguration() {
             apiKey: process.env.STATUS_PAGE_API_KEY,
             logLevel: process.env.LOG_LEVEL || 'info',
         },
+        loopInterval: process.env.LOOP_INTERVAL_MS,
     };
 
     loaded = true;

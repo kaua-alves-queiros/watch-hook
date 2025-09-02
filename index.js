@@ -3,7 +3,7 @@ const storageServcie = require('./services/storage');
 const modulesLoader = require('./services/module');
 const { log } = require('./services/configuration');
 const fs = require('fs/promises');
-
+const configurationService = require('./services/configuration');
 /**
  * @typedef {Object} Incident
  * @property {string} id - O ID único do incidente.
@@ -62,7 +62,7 @@ async function main() {
             isFirstRun = false;
             
             attempts = 0;
-            await new Promise(resolve => setTimeout(resolve, 30000));
+            await new Promise(resolve => setTimeout(resolve, configurationService.loadConfiguration().loopInterval));
         } catch (exception) {
             log('error', { exception });
             
